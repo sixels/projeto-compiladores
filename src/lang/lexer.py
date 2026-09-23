@@ -11,25 +11,25 @@ class Lexer:
         self.symbol_table = symbol_table
 
         # Rastreamento da posição (o Scanner não zera a coluna no \n)
-        self.line = 1
-        self.column = 0
+        # self.line = 1
+        # self.column = 0
         self.source_line = ""  # Para guardar a linha do erro
 
     # Função para substituir scanner.advance() para tambem guardar a linha do código
     def _advancedSource(self) -> str:
         c = self.scanner.advance()
         if c == "\n":
-            self.line += 1
-            self.column = 0
+            # self.line += 1
+            # self.column = 0
             self.source_line = ""
         elif c != Scanner.EOF:
-            self.column += 1
+            # self.column += 1
             self.source_line += c
         return c
 
     # Posição do PRÓXIMO caractere a ser lido.
     def _position(self) -> Span:
-        return Span(line=self.line, col=self.column + 1)
+        return Span(line=self.scanner.get_row(), col=self.scanner.get_column())
 
     # Quando detectado um erro, termina de ler a linha para montar a mensagem de erro
     def _readUntilEnd(self):

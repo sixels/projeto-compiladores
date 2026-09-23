@@ -30,6 +30,7 @@ class Scanner:
 
     def __row_increment(self):
         self.__row += 1
+        self.__column = 0
 
     def __get_text_index(self) -> int:
         return self.__text_index
