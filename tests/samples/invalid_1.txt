@@ -1,0 +1,25 @@
+function exemplo(_lista int[], outro &decimal) -> int {
+    *outro = 0.0;
+    return 123;
+}
+
+function main() {
+    // comentario
+    var lista int[] = [1,2,3]
+    var outro decimal = 12.0;
+    var texto string = "abc";
+    var b bool = true;
+    exemplo(lista, &outro);
+    loop a in lista {
+    }
+    loop a in 10..0 {
+    }
+    loop {
+    }
+    if true || false {
+    } else if true && false {
+    } else
+    var exp int = (1 + 2) * int(3.0) / 4;
+    var nome string = input();
+    print("Hello, ", nome, "!");
+}
