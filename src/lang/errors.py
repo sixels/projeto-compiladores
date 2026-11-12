@@ -58,21 +58,25 @@ class SyntacticError(Exception):
         mensagem: str,
         linha: int,
         coluna: int,
+        linhaCodigo: str = "",
     ):
         self.mensagem = mensagem
         self.linha = linha
         self.coluna = coluna
-        super().__init__(f"Erro Sintático. Linha {linha}, Coluna {coluna}: {mensagem}")
+        self.linhaCodigo = linhaCodigo
+        super().__init__(self.formato())
 
     # Formata o erro
     def formato(self) -> str:
-        result = f"Linha {self.linha}, Coluna {self.coluna}: {self.mensagem}"
+        result = (
+            f"Erro Sintático. Linha {self.linha}, Coluna {self.coluna}: {self.mensagem}"
+        )
 
-        # if self.linhaCodigo != "":
-        #     result += "\n"
-        #     result += self.linhaCodigo.rstrip("\n")  # Adiciona a linha do código
-        #     result += "\n"
-        #     result += " " * max(0, self.coluna - 1)  # Posiciona a "seta"
-        #     result += "^"  # Adiciona a "seta"
+        if self.linhaCodigo != "":
+            result += "\n"
+            result += self.linhaCodigo.rstrip("\n")  # Adiciona a linha do código
+            result += "\n"
+            result += " " * max(0, self.coluna - 1)  # Posiciona a "seta"
+            result += "^"  # Adiciona a "seta"
 
         return result

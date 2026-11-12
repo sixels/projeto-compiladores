@@ -5,13 +5,14 @@
 # chamada(1, 2, 3)  -- tanto pra funcao normal quanto pra cast tipo int(3.0)
 
 from lang.ast import CallExpr, FunctionDecl, Param, ReturnStmt
+from lang.parser.base import ParserBase
 from lang.tokens import Delimiter, Keyword, Operator, TokenIdentifier, TokenKeyword
 
 # tipos que tambem podem aparecer como "nome" de uma chamada, tipo int(3.0)
 TIPOS_PRIMITIVOS = (Keyword.INT, Keyword.DECIMAL, Keyword.STRING, Keyword.BOOL)
 
 
-class FuncParserMixin:
+class FuncParserMixin(ParserBase):
     def parse_function(self) -> FunctionDecl:
         # confere a palavra "function" e pega o nome depois dela
         func_token = self.expect_keyword(Keyword.FUNCTION, "esperava 'function'")
@@ -21,7 +22,9 @@ class FuncParserMixin:
         # le os parametros entre parenteses
         self.expect_delimiter(Delimiter.LPAREN, "esperava '(' após o nome da função")
         params = self.parse_parameters()
-        self.expect_delimiter(Delimiter.RPAREN, "esperava ')' para fechar os parâmetros")
+        self.expect_delimiter(
+            Delimiter.RPAREN, "esperava ')' para fechar os parâmetros"
+        )
 
         # o "-> tipo" eh opcional (nem toda funcao retorna algo)
         return_type = None

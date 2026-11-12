@@ -1,21 +1,27 @@
 import sys
+from pathlib import Path
+
+from lang.program_file import ProgramFile
 
 
 class Scanner:
     EOF = "-1"
 
-    def __init__(self, file_path):
+    def __init__(self, source: str | Path | ProgramFile):
         self.__row = 0
         self.__column = 0
         self.__text_index = 0
-        self.__text: str
 
-        try:
-            with open(file_path, "r") as file:
-                self.__text = file.read()
-        except FileNotFoundError:
-            print(f"Erro, arquivo ou diretório '{file_path}' não existe.")
-            sys.exit(-1)
+        if isinstance(source, ProgramFile):
+            self.program_file = source
+        else:
+            try:
+                self.program_file = ProgramFile(source)
+            except FileNotFoundError:
+                print(f"Erro, arquivo ou diretório '{source}' não existe.")
+                sys.exit(-1)
+
+        self.__text = self.program_file.content
 
     ## Retorna a linha atual em que estamos
     def get_row(self) -> int:

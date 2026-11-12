@@ -1,5 +1,20 @@
-from lang.ast import Program
+from lang.ast import (
+    AssignStmt,
+    ASTNode,
+    BlockStmt,
+    CallExpr,
+    DerefAssignStmt,
+    Expr,
+    FunctionDecl,
+    IfStmt,
+    Param,
+    ReturnStmt,
+    TypeNode,
+    VarDeclStmt,
+)
 from lang.errors import SyntacticError
+from lang.program_file import ProgramFile
+from lang.symbol_table import SymbolTable
 from lang.tokens import (
     Delimiter,
     Keyword,
@@ -14,10 +29,20 @@ from lang.tokens import (
 )
 
 
-class Parser:
-    def __init__(self, tokens: list[Token]):
+class ParserBase:
+    def __init__(
+        self,
+        tokens: list[Token],
+        symbol_table: SymbolTable | None = None,
+        program_file: ProgramFile | None = None,
+    ):
         self.tokens: list[Token] = tokens
         self.pos: int = 0
+        self.symbol_table: SymbolTable = (
+            symbol_table if symbol_table is not None else SymbolTable()
+        )
+        self.program_file: ProgramFile | None = program_file
+        self.errors: list[SyntacticError] = []
 
     def current(self) -> Token:
         """Retorna o token atual sem consumi-lo."""
@@ -46,7 +71,14 @@ class Parser:
         if span is None:
             span = self.current().span
 
-        return SyntacticError(msg, span.line, span.col)
+        linha_codigo = (
+            self.program_file.get_line(span.line)
+            if self.program_file is not None
+            else ""
+        )
+        return SyntacticError(
+            msg, span.line, span.col, linhaCodigo=linha_codigo
+        )
 
     # Métodos utilitários de checagem e consumo
     # check: apenas inspeciona o token atual sem avançar
@@ -155,6 +187,8 @@ class Parser:
                 case TokenDelimiter(Delimiter.SEMICOLON, _):
                     self.advance()
                     break
+                case TokenDelimiter(Delimiter.RBRACE, _):
+                    break
                 case (
                     TokenKeyword(Keyword.FUNCTION, _)
                     | TokenKeyword(Keyword.VAR, _)
@@ -166,6 +200,17 @@ class Parser:
                 case _:
                     self.advance()
 
-    def parse(self) -> Program:
-        """Executa a análise sintática completa do arquivo e retorna o nó raiz da AST (Program)."""
-        ...
+    def parse_expression(self, min_precedence: int = 0) -> Expr: ...
+    def parse_prefix(self) -> Expr: ...
+    def parse_primary(self) -> Expr: ...
+    def parse_type(self) -> TypeNode: ...
+    def parse_var_decl(self) -> VarDeclStmt: ...
+    def parse_assignment(self) -> AssignStmt | DerefAssignStmt: ...
+    def parse_block(self) -> BlockStmt: ...
+    def parse_if(self) -> IfStmt: ...
+    def parse_loop(self) -> ASTNode: ...
+    def parse_statement(self) -> ASTNode: ...
+    def parse_function(self) -> FunctionDecl: ...
+    def parse_parameters(self) -> list[Param]: ...
+    def parse_return(self) -> ReturnStmt: ...
+    def parse_call(self) -> CallExpr: ...

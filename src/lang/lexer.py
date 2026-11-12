@@ -13,19 +13,10 @@ class Lexer:
         # Rastreamento da posição (o Scanner não zera a coluna no \n)
         # self.line = 1
         # self.column = 0
-        self.source_line = ""  # Para guardar a linha do erro
 
     # Função para substituir scanner.advance() para tambem guardar a linha do código
-    def _advancedSource(self) -> str:
-        c = self.scanner.advance()
-        if c == "\n":
-            # self.line += 1
-            # self.column = 0
-            self.source_line = ""
-        elif c != Scanner.EOF:
-            # self.column += 1
-            self.source_line += c
-        return c
+    def _advancedSource(self):
+        self.scanner.advance()
 
     # Posição do PRÓXIMO caractere a ser lido.
     def _position(self) -> Span:
@@ -92,8 +83,8 @@ class Lexer:
                 num_txt += self.char
                 self._advancedSource()
                 self.char = self.scanner.peek()
-            self._readUntilEnd()
-            raise erro(2, num_txt, span.line, span.col, self.source_line)
+            linha_codigo = self.scanner.program_file.get_line(span.line)
+            raise erro(2, num_txt, span.line, span.col, linha_codigo)
 
         if dot_count == 0:
             return TokenInt(value=int(num_txt), span=span)
@@ -135,8 +126,8 @@ class Lexer:
             self.char = self.scanner.peek()
 
         if self.char in (Scanner.EOF, "\n"):
-            self._readUntilEnd()
-            raise erro(1, "", span.line, span.col, self.source_line)
+            linha_codigo = self.scanner.program_file.get_line(span.line)
+            raise erro(1, "", span.line, span.col, linha_codigo)
 
         self._advancedSource()
         self.char = self.scanner.peek()
@@ -169,5 +160,5 @@ class Lexer:
             return token_delim
 
         simbolo_invalido = self.char
-        self._readUntilEnd()
-        raise erro(0, simbolo_invalido, span.line, span.col, self.source_line)
+        linha_codigo = self.scanner.program_file.get_line(span.line)
+        raise erro(0, simbolo_invalido, span.line, span.col, linha_codigo)
