@@ -4,10 +4,12 @@ ROOT_DIR = Path(__file__).resolve().parent.parent
 sys.path.append(str(ROOT_DIR))
 from src.lang.scanner import Scanner
 from src.lang.lexer import Lexer
+from src.lang.symbol_table import SymbolTable
 from src.lang.tokens import *
 
 scan = Scanner("examples/a.txt")
-lexer = Lexer(scan)
+symbol_table = SymbolTable()
+lexer = Lexer(scan, symbol_table)
 token = None
 
 while not isinstance(token, TokenEOF):

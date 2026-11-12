@@ -99,7 +99,11 @@ def test_valid_1_reconhece_booleano():
 
 def test_valid_1_reconhece_identificador():
     tokens, st = tokenize("valid_1.txt")
-    nomes = {st.consultar(t.id).name for t in tokens if isinstance(t, TokenIdentifier)}
+    nomes = {
+        e.name
+        for t in tokens
+        if isinstance(t, TokenIdentifier) and (e := st.consultar(t.id)) is not None
+    }
     # esses nomes aparecem no codigo de exemplo (funcoes e variaveis)
     assert {"exemplo", "outro", "lista"} <= nomes
 
@@ -129,7 +133,11 @@ def test_valid_2_reconhece_nome_da_funcao():
 
     tokens, st = tokenize("valid_2.txt")
 
-    nomes = {st.consultar(t.id).name for t in tokens if isinstance(t, TokenIdentifier)}
+    nomes = {
+        e.name
+        for t in tokens
+        if isinstance(t, TokenIdentifier) and (e := st.consultar(t.id)) is not None
+    }
     assert "menorOuIgual" in nomes
 
 

@@ -16,9 +16,10 @@ import pytest
 from lang.ast import BlockStmt, LiteralExpr, VariableExpr
 from lang.errors import SyntacticError
 from lang.lexer import Lexer
-from lang.parser.base import Parser as ParserBase
+from lang.parser.base import ParserBase
 from lang.parser.decl import DeclParserMixin
 from lang.parser.func import FuncParserMixin
+from lang.parser.parser import Parser
 from lang.scanner import Scanner
 from lang.symbol_table import SymbolTable
 from lang.tokens import (
@@ -38,7 +39,8 @@ SAMPLES_DIR = Path(__file__).parent / "samples"
 # dublês: ficam no lugar das partes que ainda nao existem
 # --------------------------------------------------
 
-class _ExprStub:
+
+class _ExprStub(ParserBase):
     # no lugar do parse_expression de verdade (Membro 2)
     # so reconhece numero/string/bool/identificador, que ja basta pra testar
     def parse_expression(self, min_precedence: int = 0):
@@ -52,7 +54,7 @@ class _ExprStub:
         raise self.error("expr stub: token inesperado")
 
 
-class _StmtStub:
+class _StmtStub(ParserBase):
     # no lugar do parse_block de verdade (Membro 4)
     # so pula tudo que tem entre '{' e '}', sem entender o que tem dentro
     def parse_block(self):
@@ -63,10 +65,9 @@ class _StmtStub:
         return BlockStmt(span=open_tok.span, statements=[])
 
 
-class _TestParser(ParserBase, DeclParserMixin, _ExprStub, _StmtStub, FuncParserMixin):
+class _TestParser(DeclParserMixin, _ExprStub, _StmtStub, FuncParserMixin, ParserBase):
     def __init__(self, tokens, symbol_table):
-        super().__init__(tokens)
-        self.symbol_table = symbol_table
+        super().__init__(tokens, symbol_table)
 
 
 def parse_trecho(codigo: str):
@@ -92,17 +93,17 @@ def parse_trecho(codigo: str):
 # testes de parse_function / parse_parameters
 # --------------------------------------------------
 
+
 def test_funcao_com_parametros_e_retorno():
     p, _ = parse_trecho(
-        "function exemplo(_lista int[], outro &decimal) -> int {\n"
-        "    x = 1;\n"
-        "}"
+        "function exemplo(_lista int[], outro &decimal) -> int {\n    x = 1;\n}"
     )
     fn = p.parse_function()
 
     assert len(fn.params) == 2
     assert fn.params[0].type_node.is_array is True  # _lista eh um array (int[])
     assert fn.params[1].type_node.is_ref is True  # outro eh uma referencia (&decimal)
+    assert fn.return_type is not None
     assert fn.return_type.base.value == "int"
     assert p.is_at_end()  # leu o arquivo inteiro, sem sobrar nada
 
@@ -119,9 +120,11 @@ def test_funcao_sem_parametros_e_sem_retorno():
 # testes de parse_return
 # --------------------------------------------------
 
+
 def test_return_com_valor():
     p, _ = parse_trecho("return 123;")
     r = p.parse_return()
+    assert isinstance(r.value, LiteralExpr)
     assert r.value.value == 123
 
 
@@ -134,6 +137,7 @@ def test_return_sem_valor():
 # --------------------------------------------------
 # testes de parse_call
 # --------------------------------------------------
+
 
 def test_chamada_com_argumentos():
     p, _ = parse_trecho("soma(1, x, 2)")
@@ -155,12 +159,15 @@ def test_chamada_de_conversao_de_tipo_cast():
 
     assert len(call.arguments) == 1
     # confere que o id usado pro "int" eh o mesmo que ta na tabela de simbolos
-    assert call.callee_id == symbol_table.consultar_por_nome("int").id
+    sym = symbol_table.consultar_por_nome("int")
+    assert sym is not None
+    assert call.callee_id == sym.id
 
 
 # --------------------------------------------------
 # testes de erro (esses 3 arquivos/trechos tem erro de proposito)
 # --------------------------------------------------
+
 
 def test_parametro_sem_tipo_da_erro():
     p, _ = parse_trecho("function f(a,) { }")
@@ -181,15 +188,48 @@ def test_chamada_sem_fechar_parenteses_da_erro():
 
 
 # --------------------------------------------------
-# esses 2 so vao rodar de verdade quando o parser completo existir
-# (juntando as partes do Membro 2 e do Membro 4)
+# testes com os arquivos de exemplo completos do projeto
 # --------------------------------------------------
 
-@pytest.mark.skip(reason="esperando parser/expr.py (Membro 2) e parser/stmt.py (Membro 4)")
+
 def test_valid_1_gera_ast_sem_erro():
-    ...
+    symbol_table = SymbolTable()
+    scanner = Scanner(str(SAMPLES_DIR / "valid_1.txt"))
+    lexer = Lexer(scanner, symbol_table)
+
+    tokens = []
+    while True:
+        token = lexer.next_token()
+        tokens.append(token)
+        if isinstance(token, TokenEOF):
+            break
+
+    parser = Parser(tokens, symbol_table)
+    ast = parser.parse()
+    assert len(ast.functions) == 2
 
 
-@pytest.mark.skip(reason="esperando parser/expr.py (Membro 2) e parser/stmt.py (Membro 4)")
-def test_valid_2_gera_ast_sem_erro():
-    ...
+def test_recuperacao_multiplos_erros_sintaticos():
+    codigo = """function main() {
+    var a int = ;
+    var b int = 10;
+    var c = 20;
+}"""
+    caminho = SAMPLES_DIR / "_tmp_multiplos_erros.txt"
+    caminho.write_text(codigo)
+
+    symbol_table = SymbolTable()
+    scanner = Scanner(str(caminho))
+    lexer = Lexer(scanner, symbol_table)
+
+    tokens = []
+    while True:
+        tok = lexer.next_token()
+        tokens.append(tok)
+        if isinstance(tok, TokenEOF):
+            break
+
+    parser = Parser(tokens, symbol_table)
+    parser.parse()
+    assert len(parser.errors) >= 2
+    caminho.unlink(missing_ok=True)

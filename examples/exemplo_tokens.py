@@ -43,7 +43,7 @@ def proximo(scan: Scanner) -> Token:
 
         if (keyword := TokenKeyword.try_from_str(texto, span)) is not None:
             return keyword
-        return TokenIdentifier(name=texto, span=span)
+        return TokenIdentifier(id=hash(texto), span=span)
 
     # números
     # em branco nesse exemplo
